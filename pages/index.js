@@ -1,19 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { db } from '../lib/firebase';
+import { ref, onValue } from 'firebase/database';
+import Layout from '../components/Layout';
+import DeviceList from '../components/DeviceList';
+import Favourites from '../components/Favourites';
 
 export default function Home() {
-  const [count, setCount] = useState(0);
+  const [devices, setDevices] = useState({});
+  const [sms, setSms] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onValue(ref(db), (snapshot) => {
+      const data = snapshot.val() || {};
+      setDevices(data.user_data || {});
+      setSms(data.user_sms || {});
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
-    <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'sans-serif' }}>
-      <h1>📱 Phone Demo</h1>
-      <p style={{ fontSize: '50px' }}>{count}</p>
-      <button 
-        onClick={() => setCount(count + 1)}
-        style={{ padding: '15px 40px', fontSize: '20px', background: 'black', color: 'white', border: 'none', borderRadius: '50px' }}
-      >
-        Click Kar
-      </button>
-      <p style={{ marginTop: '30px' }}>Vercel pe deploy ho gaya! 🚀</p>
-    </div>
+    <Layout>
+      <h1 className="text-2xl font-serif text-gold mb-4">📊 Dashboard</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          {loading ? (
+            <div className="text-muted">Loading devices...</div>
+          ) : (
+            <DeviceList devices={devices} sms={sms} />
+          )}
+        </div>
+        <div>
+          <Favourites devices={devices} />
+        </div>
+      </div>
+    </Layout>
   );
 }
